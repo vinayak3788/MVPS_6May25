@@ -1,3 +1,5 @@
+// Revised StationeryStore.jsx
+// src/features/admin/components/StationeryStore.jsx (adjust path as needed)
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -67,8 +69,13 @@ export default function StationeryStore() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((product) => {
-          // array of S3 URLs
           const imgs = Array.isArray(product.images) ? product.images : [];
+          const src =
+            imgs.length > 0
+              ? imgs[0].startsWith("http")
+                ? imgs[0]
+                : `/uploads/${imgs[0]}`
+              : null;
 
           const finalPrice =
             product.discount > 0
@@ -83,9 +90,9 @@ export default function StationeryStore() {
               className="border rounded-lg overflow-hidden shadow hover:shadow-lg transition-all flex flex-col bg-white"
             >
               <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
-                {imgs.length > 0 ? (
+                {src ? (
                   <img
-                    src={imgs[0]}
+                    src={src}
                     alt={product.name}
                     className="object-contain h-full"
                   />

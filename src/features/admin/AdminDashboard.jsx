@@ -9,7 +9,6 @@ import { auth } from "../../config/firebaseConfig";
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
 
-import Sidebar from "./components/Sidebar";
 import OrdersTable from "./components/OrdersTable";
 import UsersTable from "./components/UsersTable";
 import AdminStationeryForm from "./components/AdminStationeryForm";
@@ -153,9 +152,7 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
-  const handleSwitchToUser = () => {
-    navigate("/userdashboard");
-  };
+  const handleSwitchToUser = () => navigate("/userdashboard");
 
   if (pending) {
     return <div className="text-center mt-10">Checking login…</div>;
@@ -173,58 +170,88 @@ export default function AdminDashboard() {
         </Button>
       </div>
 
-      <div className="flex min-h-[70vh]">
-        {/* Sidebar */}
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          fetchOrders={fetchOrders}
-          fetchUsers={fetchUsers}
-        />
+      {/* Tab selector at top */}
+      <nav className="flex space-x-4 mb-6 px-6">
+        <button
+          onClick={() => {
+            setActiveTab("orders");
+            fetchOrders();
+          }}
+          className={`px-4 py-2 rounded ${
+            activeTab === "orders"
+              ? "bg-purple-700 text-white"
+              : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+          }`}
+        >
+          Manage Orders
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("users");
+            fetchUsers();
+          }}
+          className={`px-4 py-2 rounded ${
+            activeTab === "users"
+              ? "bg-purple-700 text-white"
+              : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+          }`}
+        >
+          Manage Users
+        </button>
+        <button
+          onClick={() => setActiveTab("stationery")}
+          className={`px-4 py-2 rounded ${
+            activeTab === "stationery"
+              ? "bg-purple-700 text-white"
+              : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+          }`}
+        >
+          Manage Stationery
+        </button>
+      </nav>
 
-        {/* Main content */}
-        <div className="flex-1 p-6 bg-white rounded shadow overflow-auto">
-          {activeTab === "orders" && (
-            <>
-              <h2 className="text-2xl font-bold mb-4">Manage Orders</h2>
-              <OrdersTable
-                orders={orders}
-                loading={loading}
-                handleStatusChange={handleStatusChange}
-              />
-            </>
-          )}
+      {/* Main content */}
+      <div className="bg-white rounded shadow p-6 overflow-auto min-h-[60vh] mx-6">
+        {activeTab === "orders" && (
+          <>
+            <h2 className="text-2xl font-bold mb-4">Manage Orders</h2>
+            <OrdersTable
+              orders={orders}
+              loading={loading}
+              handleStatusChange={handleStatusChange}
+            />
+          </>
+        )}
 
-          {activeTab === "users" && (
-            <>
-              <h2 className="text-2xl font-bold mb-4">Manage Users</h2>
-              <UsersTable
-                users={users}
-                loading={loading}
-                handleRoleChange={handleRoleChange}
-                handleBlockUser={handleBlockUser}
-                handleUnblockUser={handleUnblockUser}
-                handleDeleteUser={handleDeleteUser}
-                handleVerifyMobile={handleVerifyMobile}
-                setEditUser={setEditUser}
-              />
-              <EditUserModal
-                editUser={editUser}
-                setEditUser={setEditUser}
-                handleEditUser={updateProfile}
-                saving={saving}
-              />
-            </>
-          )}
+        {activeTab === "users" && (
+          <>
+            <h2 className="text-2xl font-bold mb-4">Manage Users</h2>
+            <UsersTable
+              users={users}
+              loading={loading}
+              handleRoleChange={handleRoleChange}
+              handleBlockUser={handleBlockUser}
+              handleUnblockUser={handleUnblockUser}
+              handleDeleteUser={handleDeleteUser}
+              handleVerifyMobile={handleVerifyMobile}
+              setEditUser={setEditUser}
+            />
+            <EditUserModal
+              editUser={editUser}
+              setEditUser={setEditUser}
+              handleEditUser={updateProfile}
+              saving={saving}
+            />
+          </>
+        )}
 
-          {activeTab === "stationery" && (
-            <>
-              <h2 className="text-2xl font-bold mb-4">Manage Stationery</h2>
-              <AdminStationeryForm />
-              <AdminStationeryTable />
-            </>
-          )}
-        </div>
+        {activeTab === "stationery" && (
+          <>
+            <h2 className="text-2xl font-bold mb-4">Manage Stationery</h2>
+            <AdminStationeryForm />
+            <AdminStationeryTable />
+          </>
+        )}
       </div>
     </Layout>
   );

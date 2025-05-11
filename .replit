@@ -12,5 +12,9 @@ packages = ["sqlite-interactive", "psmisc", "imagemagick_light", "lsof", "tree"]
 run = ["sh", "-c", "npm run dev"]
 
 [[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
 localPort = 8080
 externalPort = 80

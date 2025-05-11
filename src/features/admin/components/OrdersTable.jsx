@@ -1,5 +1,4 @@
 // src/features/admin/components/OrdersTable.jsx
-
 import React from "react";
 import FileLinks from "/src/components/FileLinks"; // ✅ Correct absolute path
 
@@ -25,7 +24,7 @@ export default function OrdersTable({ orders, loading, handleStatusChange }) {
             <th className="px-3 py-2 border">Options</th>
             <th className="px-3 py-2 border">Total Price</th>
             <th className="px-3 py-2 border">Status</th>
-            <th className="px-3 py-2 border">Date</th>
+            <th className="px-3 py-2 border">Date (IST)</th>
           </tr>
         </thead>
         <tbody>
@@ -66,7 +65,9 @@ export default function OrdersTable({ orders, loading, handleStatusChange }) {
                 </select>
               </td>
               <td className="px-3 py-1 border text-center">
-                {new Date(order.createdAt).toLocaleString()}
+                {new Date(order.createdAt).toLocaleString("en-IN", {
+                  timeZone: "Asia/Kolkata",
+                })}
               </td>
             </tr>
           ))}

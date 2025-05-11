@@ -1,17 +1,30 @@
+<!-- index.html at your project root -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
+    <!--
+      Allow:
+       • your app’s scripts/styles
+       • Google APIs
+       • blob: in frames/objects for PDF preview
+       • images from your S3 bucket
+    -->
     <meta
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
         script-src 'self' 'unsafe-inline' https://apis.google.com;
-        connect-src 'self' https://www.googleapis.com;
+        script-src-elem 'self' 'unsafe-inline' https://apis.google.com;
+        connect-src 'self' https://www.googleapis.com https://identitytoolkit.googleapis.com;
+        frame-src 'self' blob: https://apis.google.com https://*.firebaseapp.com;
+        object-src 'self' blob:;
         style-src 'self' 'unsafe-inline';
-        img-src 'self' data:;
+        img-src 'self' data: https://mvps-print-orders.s3.ap-south-1.amazonaws.com;
       "
     />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MVPS Printing</title>
   </head>

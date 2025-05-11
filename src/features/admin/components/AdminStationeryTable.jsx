@@ -1,3 +1,5 @@
+// Revised AdminStationeryTable.jsx
+// src/features/admin/components/AdminStationeryTable.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -58,13 +60,19 @@ export default function AdminStationeryTable() {
             <tbody>
               {products.map((p, i) => {
                 const imgs = Array.isArray(p.images) ? p.images : [];
+                const src =
+                  imgs.length > 0
+                    ? imgs[0].startsWith("http")
+                      ? imgs[0]
+                      : `/uploads/${imgs[0]}`
+                    : null;
                 return (
                   <tr key={p.id} className="text-center">
                     <td className="px-4 py-2 border">{i + 1}</td>
                     <td className="px-4 py-2 border">
-                      {imgs.length > 0 ? (
+                      {src ? (
                         <img
-                          src={imgs[0]}
+                          src={src}
                           alt={p.name}
                           className="w-16 h-16 object-cover mx-auto"
                         />

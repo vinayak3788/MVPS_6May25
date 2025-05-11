@@ -74,13 +74,8 @@ export default function UserDashboard() {
 
       <div className="flex flex-wrap justify-end gap-2 mb-6">
         <Button onClick={handleViewCart}>View Cart</Button>
-        <Button
-          onClick={handleAdminAccess}
-          className="bg-purple-600 hover:bg-purple-700"
-        >
-          Switch to Admin
-        </Button>
-        <Button onClick={handleLogout} className="bg-red-500 hover:bg-red-600">
+        <Button onClick={handleAdminAccess}>Switch to Admin</Button>
+        <Button variant="secondary" className="bg-red-500 hover:bg-red-600">
           Logout
         </Button>
       </div>
@@ -88,20 +83,18 @@ export default function UserDashboard() {
       <div className="flex justify-center gap-4 mb-6">
         <Button
           onClick={() => setActiveTab("orders")}
+          variant={activeTab === "orders" ? "primary" : "secondary"}
           className={
-            activeTab === "orders"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-blue-500 border"
+            activeTab === "orders" ? "bg-blue-500 hover:bg-blue-600" : ""
           }
         >
           📄 Print Orders
         </Button>
         <Button
           onClick={() => setActiveTab("stationery")}
+          variant={activeTab === "stationery" ? "primary" : "secondary"}
           className={
-            activeTab === "stationery"
-              ? "bg-green-500 text-white"
-              : "bg-white text-green-500 border"
+            activeTab === "stationery" ? "bg-green-500 hover:bg-green-600" : ""
           }
         >
           🛒 Stationery Orders

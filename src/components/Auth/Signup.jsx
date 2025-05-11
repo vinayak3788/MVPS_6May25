@@ -33,6 +33,7 @@ export default function Signup() {
             ? "That email is already registered via Google. Please sign in with Google."
             : "That email is already in use. Try signing in instead.",
         );
+        setLoading(false);
         return;
       }
       await createUserWithEmailAndPassword(auth, email, password);
@@ -79,7 +80,7 @@ export default function Signup() {
       toast.success("Account created! Please verify mobile.");
       navigate("/verify-mobile");
     } catch (err) {
-      console.error("Google signup error:", err);
+      console.error("Popup signup error:", err);
       toast.error("Google signup failed. Please try again.");
     } finally {
       setLoading(false);
@@ -87,7 +88,7 @@ export default function Signup() {
   };
 
   return (
-    <Layout title="Sign Up for MVP Services">
+    <Layout title="Sign Up for MVP Services" maxWidth="max-w-md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block mb-1 font-medium">First Name</label>
@@ -152,7 +153,8 @@ export default function Signup() {
       <Button
         onClick={handleGoogleSignup}
         disabled={loading}
-        className="w-full flex items-center justify-center border border-gray-300 bg-white text-gray-800 hover:bg-gray-100"
+        variant="secondary"
+        className="w-full flex items-center justify-center"
       >
         <img src="/google-logo.svg" alt="Google" className="w-5 h-5 mr-2" />
         Sign up with Google

@@ -1,10 +1,10 @@
 // src/features/user/components/UploadOrderForm.jsx
-
 import React, { useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import { auth } from "../../../config/firebaseConfig";
 import toast from "react-hot-toast";
 import { useCart } from "../../../context/CartContext";
+import FileUploadWithPreview from "../../../components/FileUploadWithPreview";
 
 export default function UploadOrderForm({ files, setFiles }) {
   const { addToCart } = useCart();
@@ -14,7 +14,7 @@ export default function UploadOrderForm({ files, setFiles }) {
 
   // read PDFs & count pages
   const handleFileChange = async (e) => {
-    const selected = Array.from(e.target.files).filter((f) =>
+    const selected = Array.from(e.target.files || []).filter((f) =>
       f.name.toLowerCase().endsWith(".pdf"),
     );
     const updated = await Promise.all(
@@ -40,7 +40,7 @@ export default function UploadOrderForm({ files, setFiles }) {
     return sum;
   };
 
-  // add print-order to cart (with raw files attached)
+  // add print-order to cart
   const handleAddToCart = () => {
     if (!files.length || files.some((f) => !f.pages)) {
       toast.error("Please wait for page counts on all PDFs.");
@@ -56,11 +56,7 @@ export default function UploadOrderForm({ files, setFiles }) {
       spiralBinding,
       totalCost: getPrice(),
       createdAt: new Date().toISOString(),
-      files: files.map((f) => ({
-        name: f.name,
-        pages: f.pages,
-        raw: f.raw,
-      })),
+      files: files.map((f) => ({ name: f.name, pages: f.pages, raw: f.raw })),
     };
 
     addToCart("print", newOrder);
@@ -72,10 +68,10 @@ export default function UploadOrderForm({ files, setFiles }) {
     <div className="bg-white p-6 rounded shadow max-w-2xl mx-auto mb-8">
       <h2 className="text-lg font-semibold mb-4">Place Your Print Order</h2>
 
-      <label className="block font-medium mb-1">Upload PDF(s)</label>
-      <input type="file" accept=".pdf" multiple onChange={handleFileChange} />
+      <FileUploadWithPreview files={files} onChange={handleFileChange} />
 
       <div className="flex gap-4 mt-4">
+        {/* Print Type */}
         <div>
           <p className="font-medium mb-1">Print Type:</p>
           <label className="block">
@@ -100,6 +96,7 @@ export default function UploadOrderForm({ files, setFiles }) {
           </label>
         </div>
 
+        {/* Print Side */}
         <div>
           <p className="font-medium mb-1">Print Side:</p>
           <label className="block">

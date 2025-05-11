@@ -1,3 +1,4 @@
+// src/features/user/OrdersHistory.jsx
 import React from "react";
 
 export default function OrdersHistory({ myOrders, ordersLoading }) {
@@ -19,7 +20,7 @@ export default function OrdersHistory({ myOrders, ordersLoading }) {
                 <th className="p-2">Total Pages</th>
                 <th className="p-2">Cost</th>
                 <th className="p-2">Status</th>
-                <th className="p-2">Date</th>
+                <th className="p-2">Date (IST)</th>
               </tr>
             </thead>
             <tbody>
@@ -31,7 +32,9 @@ export default function OrdersHistory({ myOrders, ordersLoading }) {
                   <td className="p-2">₹{order.totalCost}</td>
                   <td className="p-2">{order.status}</td>
                   <td className="p-2">
-                    {new Date(order.createdAt).toLocaleString()}
+                    {new Date(order.createdAt).toLocaleString("en-IN", {
+                      timeZone: "Asia/Kolkata",
+                    })}
                   </td>
                 </tr>
               ))}
