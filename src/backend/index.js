@@ -15,7 +15,7 @@ import { initDB } from "./setupDb.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load .env vars
+// Load environment variables
 dotenv.config();
 
 // Initialize the database
@@ -34,14 +34,14 @@ app.use("/api", userRoutes);
 app.use("/api", otpRoutes);
 app.use("/api", orderRoutes);
 
-// Static file serving
-const uploadDir = path.resolve(__dirname, "../../data/uploads");
+// Static file serving for built SPA and uploads
 const distPath = path.resolve(__dirname, "../../dist");
+const uploadDir = path.resolve(__dirname, "../../data/uploads");
 app.use(express.static(distPath));
 app.use("/uploads", express.static(uploadDir));
 
-// ─── Expanded CSP HEADER ───────────────────────────────────────────────────────
-// Allows Google’s auth script, Firebase token & identity APIs, embedded frames, etc.
+// ─── Content Security Policy Header ─────────────────────────────────────────────
+// Allow Google Auth, Firebase APIs, blob URLs for PDF preview, and HTTPS images
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
@@ -49,7 +49,8 @@ app.use((req, res, next) => {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://apis.google.com",
       "connect-src 'self' https://www.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
-      "frame-src 'self' https://apis.google.com https://*.firebaseapp.com",
+      "frame-src 'self' blob: https://apis.google.com https://*.firebaseapp.com",
+      "object-src 'self' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
     ].join("; "),
@@ -57,13 +58,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// SPA fallback
+// SPA fallback: serve index.html for all other routes
 app.get("*", (req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-// Start server
+// Start server on configured port
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () =>
-  console.log(`✅ Express API running at http://localhost:${PORT}`),
+  console.log(`✅ Express API and SPA running at http://localhost:${PORT}`),
 );
