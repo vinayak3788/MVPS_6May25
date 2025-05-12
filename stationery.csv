@@ -1,0 +1,6 @@
+id,name,description,price,discount,images,createdAt
+1,Pouches,"School Pouch",250.0,3.0,"[""https://mvps-print-orders.s3.ap-south-1.amazonaws.com/stationery/1e73a3b9-b650-40f6-87c2-df23725f217f.png""]","2025-04-29 19:35:10"
+4,"Rent Agreement","Rent agreement",1999.0,0.0,"[""https://mvps-print-orders.s3.ap-south-1.amazonaws.com/stationery/19f8b6ed-90ac-4a87-986d-a2bcaa903a80.png""]","2025-04-30 11:48:37"
+6,Chakali,"Chakali bhajnichi",50.0,2.0,"[""https://mvps-print-orders.s3.ap-south-1.amazonaws.com/stationery/8b90b2b1-3deb-469f-914c-7d830b4d58ac.jpg""]","2025-05-05 15:55:29"
+7,test,test,200.0,5.0,"[""https://mvps-print-orders.s3.ap-south-1.amazonaws.com/stationery/43724b31-53e1-4bdb-861b-b3282525ea91.png""]","2025-05-06 12:51:01"
+8,"test 1","test 1",500.0,5.0,"[""https://mvps-print-orders.s3.ap-south-1.amazonaws.com/stationery/4b3309ab-6d7a-4153-a5b0-f2eb239eb243.png""]","2025-05-11 07:15:32"

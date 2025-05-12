@@ -1,152 +1,137 @@
 // src/backend/routes/stationeryRoutes.js
 
 import express from "express";
-import { open } from "sqlite";
-import sqlite3 from "sqlite3";
 import multer from "multer";
+import { runQuery } from "../db.js";
 import { uploadImageToS3 } from "../../config/s3StationeryUploader.js";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
-// Multer setup (memory storage for S3 upload)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+// Ensure stationery_products table exists
+const initStationeryTable = async () => {
+  await runQuery(`
+    CREATE TABLE IF NOT EXISTS stationery_products (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      price REAL NOT NULL,
+      discount REAL DEFAULT 0,
+      images JSON,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+};
 
-// Connect DB
-async function connectDB() {
-  return open({
-    filename: "./data/orders.db",
-    driver: sqlite3.Database,
-  });
-}
-
-// Admin: Add new product
+// 🆕 Add a product
 router.post(
   "/admin/stationery/add",
   upload.array("images", 5),
   async (req, res) => {
     try {
-      const db = await connectDB();
+      await initStationeryTable();
       const { name, description, price, discount } = req.body;
-      const files = req.files;
-
-      if (!name || !price) {
+      if (!name || !price)
         return res.status(400).json({ error: "Name and Price are required" });
+
+      // upload to S3
+      const files = req.files || [];
+      const urls = [];
+      for (const f of files) {
+        const { s3Url } = await uploadImageToS3(f.buffer, f.originalname);
+        urls.push(s3Url);
       }
 
-      const uploadedUrls = [];
-      if (files && files.length > 0) {
-        for (const file of files) {
-          const { s3Url } = await uploadImageToS3(
-            file.buffer,
-            file.originalname,
-          );
-          uploadedUrls.push(s3Url);
-        }
-      }
-
-      const imagesJson = JSON.stringify(uploadedUrls);
-      await db.run(
-        `INSERT INTO stationery_products (name, description, price, discount, images) VALUES (?, ?, ?, ?, ?)`,
+      await runQuery(
+        `INSERT INTO stationery_products
+           (name, description, price, discount, images)
+         VALUES ($1,$2,$3,$4,$5)`,
         [
           name,
           description || "",
           parseFloat(price),
           parseFloat(discount) || 0,
-          imagesJson,
+          JSON.stringify(urls),
         ],
       );
 
-      res.status(200).json({ message: "Product added successfully" });
-    } catch (error) {
-      console.error("❌ Error adding product:", error);
+      res.json({ message: "Product added successfully" });
+    } catch (err) {
+      console.error("❌ Error adding product:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   },
 );
 
-// Admin: Update product (with support for keeping old + uploading new images)
+// ✏️ Update a product
 router.put(
   "/admin/stationery/update/:id",
   upload.array("images", 5),
   async (req, res) => {
     try {
-      const db = await connectDB();
+      await initStationeryTable();
       const { name, description, price, discount, existing } = req.body;
       const { id } = req.params;
-      const files = req.files;
-
-      if (!name || !price) {
+      if (!name || !price)
         return res.status(400).json({ error: "Name and Price are required" });
+
+      // parse existing JSON array of URLs
+      const images = existing ? JSON.parse(existing) : [];
+      for (const f of req.files || []) {
+        const { s3Url } = await uploadImageToS3(f.buffer, f.originalname);
+        images.push(s3Url);
       }
 
-      let imageUrls = [];
-      if (existing) {
-        imageUrls = JSON.parse(existing);
-      }
-
-      if (files && files.length > 0) {
-        for (const file of files) {
-          const { s3Url } = await uploadImageToS3(
-            file.buffer,
-            file.originalname,
-          );
-          imageUrls.push(s3Url);
-        }
-      }
-
-      const imagesJson = JSON.stringify(imageUrls);
-
-      await db.run(
-        `UPDATE stationery_products SET name = ?, description = ?, price = ?, discount = ?, images = ? WHERE id = ?`,
+      await runQuery(
+        `UPDATE stationery_products
+           SET name=$1, description=$2, price=$3, discount=$4, images=$5
+         WHERE id=$6`,
         [
           name,
           description || "",
           parseFloat(price),
           parseFloat(discount) || 0,
-          imagesJson,
+          JSON.stringify(images),
           id,
         ],
       );
 
-      res.status(200).json({ message: "Product updated successfully" });
-    } catch (error) {
-      console.error("❌ Error updating product:", error);
+      res.json({ message: "Product updated successfully" });
+    } catch (err) {
+      console.error("❌ Error updating product:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   },
 );
 
-// Admin: Delete product
+// 🗑️ Delete a product
 router.delete("/admin/stationery/delete/:id", async (req, res) => {
   try {
-    const db = await connectDB();
+    await initStationeryTable();
     const { id } = req.params;
-
-    await db.run(`DELETE FROM stationery_products WHERE id = ?`, id);
-    res.status(200).json({ message: "Product deleted successfully" });
-  } catch (error) {
-    console.error("❌ Error deleting product:", error);
+    await runQuery(`DELETE FROM stationery_products WHERE id=$1`, [id]);
+    res.json({ message: "Product deleted successfully" });
+  } catch (err) {
+    console.error("❌ Error deleting product:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// User: Get all products
+// 📦 Fetch all products
 router.get("/stationery/products", async (req, res) => {
   try {
-    const db = await connectDB();
-    const products = await db.all(
+    await initStationeryTable();
+    const rows = await runQuery(
       `SELECT * FROM stationery_products ORDER BY createdAt DESC`,
     );
-
-    const formatted = products.map((p) => ({
+    // runQuery returns rows array
+    const formatted = rows.map((p) => ({
       ...p,
-      images: p.images ? JSON.parse(p.images) : [],
+      images: p.images || [],
     }));
-
-    res.status(200).json(formatted);
-  } catch (error) {
-    console.error("❌ Error fetching products:", error);
+    res.json(formatted);
+  } catch (err) {
+    console.error("❌ Error fetching products:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

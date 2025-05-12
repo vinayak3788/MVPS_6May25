@@ -1,53 +1,44 @@
 // src/backend/routes/otpRoutes.js
 
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" }); // ✅ Add this at the top
+dotenv.config({ path: ".env" });
 
 import express from "express";
 import axios from "axios";
 
 const router = express.Router();
+const KEY = process.env.TWOFACTOR_API_KEY;
 
-const TWOFACTOR_API_KEY = process.env.TWOFACTOR_API_KEY;
-
-// 📨 Send OTP
+// Send OTP
 router.post("/send-otp", async (req, res) => {
-  const { mobileNumber } = req.body; // ✅ Corrected to expect "mobileNumber"
-  if (!mobileNumber || !/^\d{10}$/.test(mobileNumber)) {
-    return res
-      .status(400)
-      .json({ error: "Valid 10-digit mobile number required" });
-  }
+  const { mobile } = req.body;
+  if (!mobile) return res.status(400).json({ error: "Mobile required" });
 
   try {
-    const response = await axios.get(
-      `https://2factor.in/API/V1/${TWOFACTOR_API_KEY}/SMS/+91${mobileNumber}/AUTOGEN`,
+    const { data } = await axios.get(
+      `https://2factor.in/API/V1/${KEY}/SMS/${mobile}/AUTOGEN`,
     );
-    const sessionId = response.data?.Details;
-    res.json({ sessionId });
+    res.json({ sessionId: data.Details });
   } catch (err) {
     console.error("❌ Failed to send OTP:", err);
-    res.status(500).json({ error: "Failed to send OTP." });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// ✅ Verify OTP
+// Verify OTP
 router.post("/verify-otp", async (req, res) => {
   const { sessionId, otp } = req.body;
-  if (!sessionId || !otp) {
-    return res.status(400).json({ error: "Session ID and OTP are required" });
-  }
+  if (!sessionId || !otp)
+    return res.status(400).json({ error: "sessionId & otp required" });
 
   try {
-    const response = await axios.get(
-      `https://2factor.in/API/V1/${TWOFACTOR_API_KEY}/SMS/VERIFY/${sessionId}/${otp}`,
+    const { data } = await axios.get(
+      `https://2factor.in/API/V1/${KEY}/SMS/VERIFY/${sessionId}/${otp}`,
     );
-
-    const success = response.data?.Details === "OTP Matched";
-    res.json({ success });
+    res.json({ success: data.Details === "OTP Matched" });
   } catch (err) {
     console.error("❌ Failed to verify OTP:", err);
-    res.status(500).json({ error: "Failed to verify OTP." });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

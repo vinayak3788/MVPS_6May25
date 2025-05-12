@@ -1,28 +1,41 @@
 // src/backend/db.js
 
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
+import pkg from "pg";
+const { Pool } = pkg;
 
-const dbPath = path.resolve("data/orders.db");
+/**
+ * Configure Postgres connection pool from environment variables.
+ * Make sure you’ve set in Replit secrets or your .env:
+ *   DB_HOST
+ *   DB_PORT
+ *   DB_USER
+ *   DB_PASS
+ *   DB_NAME
+ */
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT, 10),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
+  ssl: { rejectUnauthorized: false },
+});
 
-// Function to initialize the database
-const initDb = async () => {
-  const db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database,
-  });
-
-  await db.exec(`
+/**
+ * Initialize the database schema (run once at startup).
+ */
+export const initDb = async () => {
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       email TEXT PRIMARY KEY,
       role TEXT DEFAULT 'user',
       protected INTEGER DEFAULT 0,
       blocked INTEGER DEFAULT 0
     );
-
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       userEmail TEXT,
       fileNames TEXT,
       printType TEXT,
@@ -34,7 +47,8 @@ const initDb = async () => {
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       orderNumber TEXT
     );
-
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS profiles (
       email TEXT PRIMARY KEY,
       firstName TEXT,
@@ -42,23 +56,31 @@ const initDb = async () => {
       mobileNumber TEXT
     );
   `);
-
-  return db;
 };
 
-// Helper function to run queries with a single argument
-const runQuery = async (query, params = []) => {
-  const db = await initDb();
-  return db.run(query, params);
+/**
+ * Run any SQL query; returns the full result object.
+ */
+export const runQuery = async (text, params = []) => {
+  try {
+    return await pool.query(text, params);
+  } catch (err) {
+    console.error("Database query error:", err);
+    throw err;
+  }
 };
 
-// Helper function to fetch data with a single query
-const fetchData = async (query, params = []) => {
-  const db = await initDb();
-  return db.get(query, params);
+/**
+ * Run a query and return a single row (or undefined).
+ */
+export const fetchData = async (text, params = []) => {
+  const res = await runQuery(text, params);
+  return res.rows[0];
 };
 
-// Create order
+/**
+ * Create a new order, generate its orderNumber, and return both.
+ */
 export const createOrder = async (order) => {
   const {
     userEmail,
@@ -70,9 +92,12 @@ export const createOrder = async (order) => {
     totalCost,
   } = order;
 
-  const result = await runQuery(
-    `INSERT INTO orders (userEmail, fileNames, printType, sideOption, spiralBinding, totalPages, totalCost) 
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  // Insert and retrieve the new ID
+  const insertRes = await runQuery(
+    `INSERT INTO orders
+      (userEmail, fileNames, printType, sideOption, spiralBinding, totalPages, totalCost)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     RETURNING id`,
     [
       userEmail,
       fileNames,
@@ -83,95 +108,118 @@ export const createOrder = async (order) => {
       totalCost,
     ],
   );
+  const id = insertRes.rows[0].id;
+  const orderNumber = `ORD${id.toString().padStart(4, "0")}`;
 
-  const orderNumber = `ORD${result.lastID.toString().padStart(4, "0")}`;
-  await runQuery(`UPDATE orders SET orderNumber = ? WHERE id = ?`, [
+  // Update the record with its generated orderNumber
+  await runQuery(`UPDATE orders SET orderNumber = $1 WHERE id = $2`, [
     orderNumber,
-    result.lastID,
+    id,
   ]);
 
-  return { id: result.lastID, orderNumber };
+  return { id, orderNumber };
 };
 
-// Get all orders
+/**
+ * Fetch all orders, most recent first.
+ */
 export const getAllOrders = async () => {
-  const db = await initDb();
-  const rows = await db.all(`SELECT * FROM orders ORDER BY createdAt DESC`);
-  return { orders: rows };
+  const res = await runQuery(`SELECT * FROM orders ORDER BY createdAt DESC`);
+  return { orders: res.rows };
 };
 
-// Update order status
+/**
+ * Change an order’s status.
+ */
 export const updateOrderStatus = async (id, status) => {
-  await runQuery(`UPDATE orders SET status = ? WHERE id = ?`, [status, id]);
+  await runQuery(`UPDATE orders SET status = $1 WHERE id = $2`, [status, id]);
 };
 
-// Ensure user role exists, create if not
+/**
+ * Ensure a user row exists; if not, insert with default role.
+ */
 export const ensureUserRole = async (email) => {
-  const user = await fetchData(`SELECT * FROM users WHERE email = ?`, [email]);
-
+  const user = await fetchData(`SELECT * FROM users WHERE email = $1`, [email]);
   if (!user) {
     const role = email === "vinayak3788@gmail.com" ? "admin" : "user";
     await runQuery(
-      `INSERT INTO users (email, role, protected, blocked) VALUES (?, ?, 1, 0)`,
+      `INSERT INTO users (email, role, protected, blocked)
+       VALUES ($1,$2,1,0)`,
       [email, role],
     );
   }
-
-  const userRole = await fetchData(`SELECT role FROM users WHERE email = ?`, [
+  const ur = await fetchData(`SELECT role FROM users WHERE email = $1`, [
     email,
   ]);
-  return userRole?.role || "user";
+  return ur?.role || "user";
 };
 
-// Update user role
+/**
+ * Update a user’s role (cannot change protected admin).
+ */
 export const updateUserRole = async (email, role) => {
-  if (email === "vinayak3788@gmail.com")
+  if (email === "vinayak3788@gmail.com") {
     throw new Error("Cannot update role for protected admin.");
-  await runQuery(`UPDATE users SET role = ? WHERE email = ?`, [role, email]);
+  }
+  await runQuery(`UPDATE users SET role = $1 WHERE email = $2`, [role, email]);
 };
 
-// Get user role
+/**
+ * Retrieve a user’s role.
+ */
 export const getUserRole = async (email) => {
-  const userRole = await fetchData(`SELECT role FROM users WHERE email = ?`, [
+  const ur = await fetchData(`SELECT role FROM users WHERE email = $1`, [
     email,
   ]);
-  return userRole?.role || "user";
+  return ur?.role || "user";
 };
 
-// Block user
+/**
+ * Block a user (cannot block protected admin).
+ */
 export const blockUser = async (email) => {
-  if (email === "vinayak3788@gmail.com")
+  if (email === "vinayak3788@gmail.com") {
     throw new Error("Cannot block protected admin.");
-  await runQuery(`UPDATE users SET blocked = 1 WHERE email = ?`, [email]);
+  }
+  await runQuery(`UPDATE users SET blocked = 1 WHERE email = $1`, [email]);
 };
 
-// Unblock user
+/**
+ * Unblock a user.
+ */
 export const unblockUser = async (email) => {
-  await runQuery(`UPDATE users SET blocked = 0 WHERE email = ?`, [email]);
+  await runQuery(`UPDATE users SET blocked = 0 WHERE email = $1`, [email]);
 };
 
-// Delete user
+/**
+ * Delete a user (cannot delete protected admin).
+ */
 export const deleteUser = async (email) => {
-  if (email === "vinayak3788@gmail.com")
+  if (email === "vinayak3788@gmail.com") {
     throw new Error("Cannot delete protected admin.");
-  await runQuery(`DELETE FROM users WHERE email = ?`, [email]);
+  }
+  await runQuery(`DELETE FROM users WHERE email = $1`, [email]);
 };
 
-// Check if user is blocked
+/**
+ * Check whether a user is blocked.
+ */
 export const isUserBlocked = async (email) => {
-  const result = await fetchData(`SELECT blocked FROM users WHERE email = ?`, [
+  const row = await fetchData(`SELECT blocked FROM users WHERE email = $1`, [
     email,
   ]);
-  return result?.blocked === 1;
+  return row?.blocked === 1;
 };
 
-// Update order files after upload
+/**
+ * Update the fileNames/totalPages for an existing order.
+ */
 export const updateOrderFiles = async (orderId, { fileNames, totalPages }) => {
   await runQuery(
-    `UPDATE orders SET fileNames = ?, totalPages = ? WHERE id = ?`,
+    `UPDATE orders
+       SET fileNames = $1,
+           totalPages = $2
+     WHERE id = $3`,
     [fileNames, totalPages, orderId],
   );
 };
-
-// Export initDb for potential testing or direct usage elsewhere
-export { initDb };

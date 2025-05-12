@@ -2,40 +2,44 @@ service: mvps-printing
 
 frameworkVersion: "3"
 
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-esbuild
+
 provider:
   name: aws
   runtime: nodejs18.x
   region: ap-south-1
   stage: prod
   environment:
-    NODE_ENV: production
-    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID}
-    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY}
-    AWS_REGION: ${env:AWS_REGION}
     AWS_S3_BUCKET_NAME: ${env:AWS_S3_BUCKET_NAME}
     TWOFACTOR_API_KEY: ${env:TWOFACTOR_API_KEY}
     EMAIL_USER: ${env:EMAIL_USER}
     EMAIL_PASS: ${env:EMAIL_PASS}
-    VITE_FIREBASE_API_KEY: ${env:VITE_FIREBASE_API_KEY}
-    VITE_FIREBASE_AUTH_DOMAIN: ${env:VITE_FIREBASE_AUTH_DOMAIN}
-    VITE_FIREBASE_PROJECT_ID: ${env:VITE_FIREBASE_PROJECT_ID}
-    VITE_FIREBASE_STORAGE_BUCKET: ${env:VITE_FIREBASE_STORAGE_BUCKET}
-    VITE_FIREBASE_MESSAGING_SENDER_ID: ${env:VITE_FIREBASE_MESSAGING_SENDER_ID}
-    VITE_FIREBASE_APP_ID: ${env:VITE_FIREBASE_APP_ID}
-
-plugins:
-  - serverless-esbuild
+    DB_HOST: ${env:DB_HOST}
+    DB_PORT: ${env:DB_PORT}
+    DB_USER: ${env:DB_USER}
+    DB_PASS: ${env:DB_PASS}
+    DB_NAME: ${env:DB_NAME}
 
 package:
   excludeDevDependencies: true
 
 custom:
+  dotenv:
+    required: true
+    include:
+      - AWS_S3_BUCKET_NAME
+      - TWOFACTOR_API_KEY
+      - EMAIL_USER
+      - EMAIL_PASS
   esbuild:
     bundle: true
     minify: true
     sourcemap: false
     target: node18
     platform: node
+    format: esm
     external:
       - aws-sdk
     concurrency: 10

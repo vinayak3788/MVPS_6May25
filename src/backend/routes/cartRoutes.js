@@ -1,46 +1,35 @@
 // src/backend/routes/cartRoutes.js
 
 import express from "express";
-import { open } from "sqlite";
-import sqlite3 from "sqlite3";
-import path from "path";
+import { runQuery } from "../db.js";
 
 const router = express.Router();
 
-const connectDB = async () => {
-  return open({
-    filename: path.resolve("data/orders.db"),
-    driver: sqlite3.Database,
-  });
-};
-
-// ✅ Create cart table if not exists
-const ensureCartTable = async () => {
-  const db = await connectDB();
-  await db.exec(`
+// Ensure carts table exists
+const initCartTable = async () => {
+  await runQuery(`
     CREATE TABLE IF NOT EXISTS carts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userEmail TEXT,
-      type TEXT, -- 'print' or 'stationery'
-      itemId TEXT, -- file name or stationery product ID
-      details TEXT,
+      id SERIAL PRIMARY KEY,
+      userEmail TEXT NOT NULL,
+      type TEXT NOT NULL,        -- 'print' or 'stationery'
+      itemId TEXT NOT NULL,      -- file name or stationery product ID
+      details JSON,              -- any extra JSON details
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
+    );
   `);
 };
 
-// 🛒 Add item to cart
+// 🛒 Add to cart
 router.post("/cart/add", async (req, res) => {
   const { userEmail, type, itemId, details } = req.body;
   if (!userEmail || !type || !itemId) {
     return res.status(400).json({ error: "Missing fields" });
   }
-
   try {
-    await ensureCartTable();
-    const db = await connectDB();
-    await db.run(
-      `INSERT INTO carts (userEmail, type, itemId, details) VALUES (?, ?, ?, ?)`,
+    await initCartTable();
+    await runQuery(
+      `INSERT INTO carts (userEmail, type, itemId, details)
+       VALUES ($1, $2, $3, $4)`,
       [userEmail, type, itemId, JSON.stringify(details)],
     );
     res.json({ message: "Added to cart" });
@@ -50,14 +39,14 @@ router.post("/cart/add", async (req, res) => {
   }
 });
 
-// 🧾 Fetch cart for user
+// 🧾 Fetch cart for a user
 router.get("/cart", async (req, res) => {
   const email = req.query.email;
   if (!email) return res.status(400).json({ error: "Email required" });
 
   try {
-    const db = await connectDB();
-    const items = await db.all(`SELECT * FROM carts WHERE userEmail = ?`, [
+    await initCartTable();
+    const items = await runQuery(`SELECT * FROM carts WHERE userEmail = $1`, [
       email,
     ]);
     res.json({ items });
@@ -67,12 +56,29 @@ router.get("/cart", async (req, res) => {
   }
 });
 
-// 🗑️ Remove item from cart (optional, for future)
+// 🧹 Clear entire cart for a user
+router.post("/cart/clear", async (req, res) => {
+  const { userEmail } = req.body;
+  if (!userEmail) return res.status(400).json({ error: "Email required" });
+
+  try {
+    await initCartTable();
+    await runQuery(`DELETE FROM carts WHERE userEmail = $1`, [userEmail]);
+    res.json({ message: "Cart cleared" });
+  } catch (err) {
+    console.error("❌ Failed to clear cart:", err);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// 🗑️ Remove a single item
 router.post("/cart/remove", async (req, res) => {
   const { id } = req.body;
+  if (!id) return res.status(400).json({ error: "Item ID required" });
+
   try {
-    const db = await connectDB();
-    await db.run(`DELETE FROM carts WHERE id = ?`, [id]);
+    await initCartTable();
+    await runQuery(`DELETE FROM carts WHERE id = $1`, [id]);
     res.json({ message: "Removed from cart" });
   } catch (err) {
     console.error("❌ Failed to remove item:", err);
