@@ -1,6 +1,6 @@
 // src/backend/index.js
+
 import dotenv from "dotenv";
-import { fileURLToPath } from "url";
 import path from "path";
 import express from "express";
 import cors from "cors";
@@ -10,16 +10,20 @@ import userRoutes from "./routes/userRoutes.js";
 import otpRoutes from "./routes/otpRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 
-import { initDB } from "./setupDb.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { initDb } from "./db.js";
 
 // Load environment variables
 dotenv.config();
 
-// Initialize the database
-await initDB();
+// Initialize the database (inside an IIFE so we avoid top-level await)
+(async () => {
+  try {
+    await initDb();
+    console.log("✅ Database initialized");
+  } catch (err) {
+    console.error("❌ Failed to initialize database:", err);
+  }
+})();
 
 const app = express();
 
@@ -35,8 +39,8 @@ app.use("/api", otpRoutes);
 app.use("/api", orderRoutes);
 
 // Static file serving for built SPA and uploads
-const distPath = path.resolve(__dirname, "../../dist");
-const uploadDir = path.resolve(__dirname, "../../data/uploads");
+const distPath = path.resolve(process.cwd(), "dist");
+const uploadDir = path.resolve(process.cwd(), "data/uploads");
 app.use(express.static(distPath));
 app.use("/uploads", express.static(uploadDir));
 
@@ -71,5 +75,4 @@ if (!process.env.LAMBDA_TASK_ROOT) {
   );
 }
 
-// Export the app for Lambda
 export default app;
