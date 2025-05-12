@@ -1,0 +1,24 @@
+service: mvps-printing
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+  stage: prod
+  environment:
+    NODE_ENV: production
+    # Add your .env keys here:
+    # DB_FILE: ${env:DB_FILE}
+    # OTP_API_KEY: ${env:OTP_API_KEY}
+    # ...etc.
+
+functions:
+  api:
+    handler: handler.main
+    events:
+      - httpApi: "*"    # catch-all HTTP API v2
+
+plugins:
+  - serverless-offline   # optional, for local testing

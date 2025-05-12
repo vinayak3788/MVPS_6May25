@@ -63,8 +63,13 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-// Start server on configured port
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () =>
-  console.log(`✅ Express API and SPA running at http://localhost:${PORT}`),
-);
+// Only start a real HTTP server when running locally
+if (!process.env.LAMBDA_TASK_ROOT) {
+  const PORT = process.env.PORT || 8080;
+  app.listen(PORT, () =>
+    console.log(`✅ Express API and SPA running at http://localhost:${PORT}`),
+  );
+}
+
+// Export the app for Lambda
+export default app;
