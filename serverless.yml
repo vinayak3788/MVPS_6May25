@@ -6,23 +6,25 @@ plugins:
   - serverless-dotenv-plugin
   - serverless-esbuild
 
-    provider:
-    name: aws
-    runtime: nodejs20.x
-    region: ap-south-1
-    environment:
-      AWS_S3_BUCKET_NAME: ${env:AWS_S3_BUCKET_NAME}
-      TWOFACTOR_API_KEY:  ${env:TWOFACTOR_API_KEY}
-      EMAIL_USER:         ${env:EMAIL_USER}
-      EMAIL_PASS:         ${env:EMAIL_PASS}
-      DB_HOST:            ${env:DB_HOST}
-      DB_PORT:            ${env:DB_PORT}
-      DB_USER:            ${env:DB_USER}
-      DB_PASS:            ${env:DB_PASS}
-      DB_NAME:            ${env:DB_NAME}
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-south-1
+  environment:
+    AWS_S3_BUCKET_NAME: ${env:AWS_S3_BUCKET_NAME}
+    TWOFACTOR_API_KEY:  ${env:TWOFACTOR_API_KEY}
+    EMAIL_USER:         ${env:EMAIL_USER}
+    EMAIL_PASS:         ${env:EMAIL_PASS}
+    DB_HOST:            ${env:DB_HOST}
+    DB_PORT:            ${env:DB_PORT}
+    DB_USER:            ${env:DB_USER}
+    DB_PASS:            ${env:DB_PASS}
+    DB_NAME:            ${env:DB_NAME}
 
 package:
   excludeDevDependencies: true
+  include:
+    - package.json
 
 custom:
   dotenv:
@@ -32,6 +34,11 @@ custom:
       - TWOFACTOR_API_KEY
       - EMAIL_USER
       - EMAIL_PASS
+      - DB_HOST
+      - DB_PORT
+      - DB_USER
+      - DB_PASS
+      - DB_NAME
   esbuild:
     bundle: true
     minify: true
