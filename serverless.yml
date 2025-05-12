@@ -1,6 +1,6 @@
 service: mvps-printing
 
-#frameworkVersion: "3"
+frameworkVersion: "3"
 
 provider:
   name: aws
@@ -9,16 +9,39 @@ provider:
   stage: prod
   environment:
     NODE_ENV: production
-    # Add your .env keys here:
-    # DB_FILE: ${env:DB_FILE}
-    # OTP_API_KEY: ${env:OTP_API_KEY}
-    # ...etc.
+    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID}
+    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY}
+    AWS_REGION: ${env:AWS_REGION}
+    AWS_S3_BUCKET_NAME: ${env:AWS_S3_BUCKET_NAME}
+    TWOFACTOR_API_KEY: ${env:TWOFACTOR_API_KEY}
+    EMAIL_USER: ${env:EMAIL_USER}
+    EMAIL_PASS: ${env:EMAIL_PASS}
+    VITE_FIREBASE_API_KEY: ${env:VITE_FIREBASE_API_KEY}
+    VITE_FIREBASE_AUTH_DOMAIN: ${env:VITE_FIREBASE_AUTH_DOMAIN}
+    VITE_FIREBASE_PROJECT_ID: ${env:VITE_FIREBASE_PROJECT_ID}
+    VITE_FIREBASE_STORAGE_BUCKET: ${env:VITE_FIREBASE_STORAGE_BUCKET}
+    VITE_FIREBASE_MESSAGING_SENDER_ID: ${env:VITE_FIREBASE_MESSAGING_SENDER_ID}
+    VITE_FIREBASE_APP_ID: ${env:VITE_FIREBASE_APP_ID}
+
+plugins:
+  - serverless-esbuild
+
+package:
+  excludeDevDependencies: true
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+    target: node18
+    platform: node
+    external:
+      - aws-sdk
+    concurrency: 10
 
 functions:
   api:
     handler: handler.main
     events:
-      - httpApi: "*"    # catch-all HTTP API v2
-
-plugins:
-  - serverless-offline   # optional, for local testing
+      - httpApi: "*"
