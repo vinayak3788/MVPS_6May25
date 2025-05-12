@@ -45,7 +45,7 @@ custom:
     sourcemap: false
     target: node18
     platform: node
-    format: esm
+    format: cjs
     external:
       - aws-sdk
     concurrency: 10
