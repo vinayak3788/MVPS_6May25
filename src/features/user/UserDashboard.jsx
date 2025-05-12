@@ -27,7 +27,7 @@ export default function UserDashboard() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         toast.error("No user logged in.");
-        navigate("/login");
+        navigate("/login", { replace: true });
       } else {
         await validateMobile(user.email);
         setPending(false);
@@ -38,12 +38,17 @@ export default function UserDashboard() {
   }, [navigate, validateMobile, fetchMyOrders]);
 
   const handleLogout = async () => {
-    await signOut(auth);
-    navigate("/login");
+    try {
+      await signOut(auth);
+      toast.success("Logged out successfully.");
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("Logout failed:", err);
+      toast.error("Logout failed. Please try again.");
+    }
   };
 
   const handleViewCart = () => navigate("/cart");
-
   const handleAdminAccess = async () => {
     const user = auth.currentUser;
     if (!user) {
@@ -51,7 +56,7 @@ export default function UserDashboard() {
       return;
     }
     try {
-      await user.getIdToken(true);
+      //await user.getIdToken(true);
       const res = await axios.get(`/api/get-role?email=${user.email}`);
       if (res.data.role === "admin" || user.email === "vinayak3788@gmail.com") {
         navigate("/admin");
@@ -75,7 +80,11 @@ export default function UserDashboard() {
       <div className="flex flex-wrap justify-end gap-2 mb-6">
         <Button onClick={handleViewCart}>View Cart</Button>
         <Button onClick={handleAdminAccess}>Switch to Admin</Button>
-        <Button variant="secondary" className="bg-red-500 hover:bg-red-600">
+        <Button
+          onClick={handleLogout}
+          variant="secondary"
+          className="bg-red-500 hover:bg-red-600"
+        >
           Logout
         </Button>
       </div>
