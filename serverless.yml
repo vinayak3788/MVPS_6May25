@@ -48,7 +48,6 @@ custom:
     platform: node
     format: cjs
     external:
-      - aws-sdk
       - sqlite3
       - sqlite
       - react
@@ -59,8 +58,6 @@ custom:
       - pdf-lib
       - pdfjs-dist
       - firebase
-      - '@aws-sdk/s3-request-presigner'
-      - 'mime-types'
     concurrency: 10
 
 functions:
