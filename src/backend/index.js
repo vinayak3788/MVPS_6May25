@@ -32,11 +32,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Mount API routes under /api
-app.use("/api", stationeryRoutes);
-app.use("/api", userRoutes);
-app.use("/api", otpRoutes);
-app.use("/api", orderRoutes);
+// ─── MOUNT YOUR ROUTES AT ROOT ────────────────────────────────────────────────
+// Now GET /get-orders, POST /submit-order, etc. will match
+app.use(stationeryRoutes);
+app.use(userRoutes);
+app.use(otpRoutes);
+app.use(orderRoutes);
 
 // Static file serving for built SPA and uploads
 const distPath = path.resolve(process.cwd(), "dist");
