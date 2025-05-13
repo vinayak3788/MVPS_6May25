@@ -4,6 +4,7 @@ frameworkVersion: "3"
 
 plugins:
   - serverless-dotenv-plugin
+  - serverless-esbuild
 
 provider:
   name: aws
@@ -20,7 +21,6 @@ provider:
     DB_PASS:            ${env:DB_PASS}
     DB_NAME:            ${env:DB_NAME}
 
-# default packaging will include node_modules
 package:
   excludeDevDependencies: true
   include:
@@ -39,6 +39,27 @@ custom:
       - DB_USER
       - DB_PASS
       - DB_NAME
+
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+    target: node20
+    platform: node
+    format: cjs
+    external:
+      - aws-sdk
+      - sqlite3
+      - sqlite
+      - react
+      - react-dom
+      - react-hot-toast
+      - react-icons
+      - react-qr-code
+      - pdf-lib
+      - pdfjs-dist
+      - firebase
+    concurrency: 10
 
 functions:
   api:

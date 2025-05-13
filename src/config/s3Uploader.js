@@ -1,53 +1,58 @@
-import dotenv from "dotenv";
+// src/config/s3Uploader.js
+
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl as awsGetSignedUrl } from "@aws-sdk/s3-request-presigner";
 import path from "path";
-import { fileURLToPath } from "url";
-import AWS from "aws-sdk";
+import { v4 as uuidv4 } from "uuid";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+// Use your AWS_REGION from env
+const bucketName = process.env.AWS_S3_BUCKET_NAME;
+const region = process.env.AWS_REGION;
+const s3 = new S3Client({ region });
 
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-});
+/**
+ * Uploads a file buffer to S3 under a unique key.
+ * @param {Buffer} buffer      The raw file buffer
+ * @param {string} originalName The original filename (to preserve extension)
+ * @param {string} folder      Optional S3 “folder” prefix
+ * @returns { cleanFileName: string } The S3 key that was written
+ */
+export async function uploadFileToS3(buffer, originalName, folder = "") {
+  const ext = path.extname(originalName);
+  const key = folder ? `${folder}/${uuidv4()}${ext}` : `${uuidv4()}${ext}`;
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME;
-const BUCKET_FOLDER = process.env.AWS_BUCKET_FOLDER || "uploads";
-
-export async function uploadFileToS3(buffer, originalFileName, orderNumber) {
-  if (!BUCKET_NAME) {
-    throw new Error("❌ AWS_S3_BUCKET_NAME is missing in environment");
-  }
-  const ext = originalFileName.split(".").pop();
-  const base = originalFileName.replace(/\.[^/.]+$/, "");
-  const cleanFileName = `${orderNumber}_${base}.${ext}`;
-  const Key = `${BUCKET_FOLDER}/${cleanFileName}`;
-
-  await s3
-    .upload({
-      Bucket: BUCKET_NAME,
-      Key,
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
       Body: buffer,
-      ContentType: "application/pdf",
-    })
-    .promise();
+      ContentType:
+        ext === ".pdf"
+          ? "application/pdf"
+          : ext === ".png"
+            ? "image/png"
+            : ext === ".jpg" || ext === ".jpeg"
+              ? "image/jpeg"
+              : "application/octet-stream",
+    }),
+  );
 
-  const s3Url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${Key}`;
-  console.log(`✅ File uploaded to S3: ${s3Url}`);
-  return { cleanFileName, s3Url };
+  return { cleanFileName: key };
 }
 
-// ——— Make sure this is actually exported! ———
-export async function getSignedUrl(fileName) {
-  if (!BUCKET_NAME) {
-    throw new Error("❌ AWS_S3_BUCKET_NAME is missing in environment");
-  }
-  const Key = `${BUCKET_FOLDER}/${fileName}`;
-  return s3.getSignedUrlPromise("getObject", {
-    Bucket: BUCKET_NAME,
-    Key,
-    Expires: 60,
+/**
+ * Generates a presigned GET URL for an existing object.
+ * @param {string} key The S3 key of the object
+ * @returns {Promise<string>} A URL valid for one hour
+ */
+export async function getSignedUrl(key) {
+  const cmd = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
   });
+  return awsGetSignedUrl(s3, cmd, { expiresIn: 3600 });
 }
