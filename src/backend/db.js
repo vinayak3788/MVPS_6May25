@@ -1,11 +1,9 @@
-// src/backend/db.js
-
 import pkg from "pg";
 const { Pool } = pkg;
 
 /**
  * Configure Postgres connection pool from environment variables.
- * Make sure you’ve set in Replit secrets or your .env:
+ * Make sure you’ve set in your environment (e.g. Replit Secrets or .env):
  *   DB_HOST
  *   DB_PORT
  *   DB_USER
@@ -33,6 +31,7 @@ export const initDb = async () => {
       blocked INTEGER DEFAULT 0
     );
   `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       id SERIAL PRIMARY KEY,
@@ -48,6 +47,7 @@ export const initDb = async () => {
       orderNumber TEXT
     );
   `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS profiles (
       email TEXT PRIMARY KEY,
@@ -92,7 +92,7 @@ export const createOrder = async (order) => {
     totalCost,
   } = order;
 
-  // Insert and retrieve the new ID
+  // Insert and get the new ID
   const insertRes = await runQuery(
     `INSERT INTO orders
       (userEmail, fileNames, printType, sideOption, spiralBinding, totalPages, totalCost)

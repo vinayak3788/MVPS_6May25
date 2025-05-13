@@ -1,11 +1,7 @@
 // src/components/Auth/Signup.jsx
+
 import React, { useState } from "react";
 import { auth, googleProvider } from "../../config/firebaseConfig";
-import {
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  fetchSignInMethodsForEmail,
-} from "firebase/auth";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -26,7 +22,8 @@ export default function Signup() {
     e.preventDefault();
     setLoading(true);
     try {
-      const methods = await fetchSignInMethodsForEmail(auth, email);
+      // check existing sign-in methods
+      const methods = await auth.fetchSignInMethodsForEmail(email);
       if (methods.length) {
         toast.error(
           methods.includes("google.com")
@@ -36,13 +33,18 @@ export default function Signup() {
         setLoading(false);
         return;
       }
-      await createUserWithEmailAndPassword(auth, email, password);
+
+      // email/password signup
+      await auth.createUserWithEmailAndPassword(email, password);
+
+      // create your user profile in Postgres
       await axios.post("/api/create-user-profile", {
         email,
         firstName,
         lastName,
         mobileNumber: mobile,
       });
+
       toast.success(`Welcome, ${firstName}!`);
       navigate("/verify-mobile");
     } catch (err) {
@@ -56,8 +58,11 @@ export default function Signup() {
   const handleGoogleSignup = async () => {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      // popup login
+      const result = await auth.signInWithPopup(googleProvider);
       const userEmail = result.user.email;
+
+      // check if profile exists
       let existing = null;
       try {
         const resp = await axios.get(`/api/get-profile?email=${userEmail}`);
@@ -65,18 +70,22 @@ export default function Signup() {
       } catch (e) {
         if (e.response?.status !== 404) throw e;
       }
+
       if (existing?.firstName) {
         await auth.signOut();
         toast.error("Already registered. Please log in.");
         navigate("/login");
         return;
       }
+
+      // create blank profile on first Google signup
       await axios.post("/api/create-user-profile", {
         email: userEmail,
         firstName: "",
         lastName: "",
         mobileNumber: "",
       });
+
       toast.success("Account created! Please verify mobile.");
       navigate("/verify-mobile");
     } catch (err) {

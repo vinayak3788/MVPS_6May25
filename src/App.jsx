@@ -9,10 +9,9 @@ import UserDashboard from "./features/user/UserDashboard";
 import VerifyMobile from "./components/Auth/VerifyMobile";
 import Cart from "./pages/Cart";
 import UserOrders from "./pages/UserOrders";
-import { auth } from "./config/firebaseConfig";
-import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./config/firebaseConfig"; // <- no named imports
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast"; // ← added toast import
+import toast, { Toaster } from "react-hot-toast";
 import { CartProvider, useCart } from "./context/CartContext";
 
 // Clears cart on sign-out (or session expiration) and waits for initial auth check
@@ -21,12 +20,13 @@ function AuthListener({ children }) {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    // Switch to instance method instead of invalid named import
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       if (!user) clearCart();
       setAuthReady(true);
     });
-    return () => unsub();
-  }, []);
+    return unsubscribe;
+  }, [clearCart]);
 
   if (!authReady) {
     return <div className="text-center mt-10">Loading...</div>;
