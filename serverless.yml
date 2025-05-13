@@ -43,7 +43,7 @@ custom:
     bundle: true
     minify: true
     sourcemap: false
-    target: node18
+    target: node20
     platform: node
     format: esm
     external:
@@ -52,6 +52,6 @@ custom:
 
 functions:
   api:
-    handler: handler.mjs.main
+    handler: handler.main
     events:
       - httpApi: "*"

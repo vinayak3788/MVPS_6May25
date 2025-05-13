@@ -1,5 +1,3 @@
-// handler.js
 import serverless from "serverless-http";
-import app from "./src/backend/index.js";   // the refactored Express app
-
+import app from "./src/backend/index.js";
 export const main = serverless(app);
