@@ -60,6 +60,7 @@ custom:
       - pdfjs-dist
       - firebase
       - '@aws-sdk/s3-request-presigner'
+      - 'mime-types'
     concurrency: 10
 
 functions:
