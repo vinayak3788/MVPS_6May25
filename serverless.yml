@@ -59,6 +59,7 @@ custom:
       - pdf-lib
       - pdfjs-dist
       - firebase
+      - @aws-sdk/s3-request-presigner
     concurrency: 10
 
 functions:
