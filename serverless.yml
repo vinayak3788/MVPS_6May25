@@ -45,13 +45,13 @@ custom:
     sourcemap: false
     target: node18
     platform: node
-    format: cjs
+    format: esm
     external:
       - aws-sdk
     concurrency: 10
 
 functions:
   api:
-    handler: handler.main
+    handler: handler.mjs.main
     events:
       - httpApi: "*"
