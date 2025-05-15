@@ -1,5 +1,5 @@
 modules = ["nodejs-20", "web"]
-run = "npm run dev"
+run = "node index.js"
 
 # disable Replit’s default CSP so our own <meta> policy can apply
 content-security-policy = ""
@@ -9,7 +9,7 @@ channel = "stable-24_05"
 packages = ["sqlite-interactive", "psmisc", "imagemagick_light", "lsof", "tree", "awscli2", "postgresql_16", "dig"]
 
 [deployment]
-run = ["sh", "-c", "npm run dev"]
+run = ["sh", "-c", "node index.js"]
 
 [[ports]]
 localPort = 3000
