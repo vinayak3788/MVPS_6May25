@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import path from "path";
 import express from "express";
 import cors from "cors";
+import { fileURLToPath } from "url";
 
 import stationeryRoutes from "./routes/stationeryRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -10,8 +11,12 @@ import orderRoutes from "./routes/orderRoutes.js";
 
 import { initDb } from "./db.js";
 
-// Load environment variables
-dotenv.config();
+// Determine directory paths
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from project root
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 // Initialize the database (inside an IIFE so we avoid top-level await)
 (async () => {
@@ -31,7 +36,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ─── MOUNT YOUR ROUTES UNDER /api ───────────────────────────────────────────
+// Mount API routes under /api
 app.use("/api/stationery", stationeryRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/otp", otpRoutes);
@@ -48,8 +53,7 @@ const uploadDir = path.resolve(process.cwd(), "data/uploads");
 app.use(express.static(distPath));
 app.use("/uploads", express.static(uploadDir));
 
-// ─── Content Security Policy Header ─────────────────────────────────────────
-// Allow Google Auth, Firebase APIs, blob URLs for PDF preview, and HTTPS images
+// Content Security Policy header
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
@@ -67,7 +71,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve SPA for non-API routes
+// Serve SPA for non-API/uploads routes
 app.use((req, res, next) => {
   if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
     return next();
@@ -75,7 +79,7 @@ app.use((req, res, next) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-// Start the HTTP server when not in Lambda
+// Start server when not in Lambda
 if (!process.env.LAMBDA_TASK_ROOT) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, "0.0.0.0", () =>
