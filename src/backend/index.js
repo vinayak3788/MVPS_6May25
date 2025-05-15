@@ -70,9 +70,10 @@ app.get("*", (req, res) => {
 
 // Only start a real HTTP server when running locally
 if (!process.env.LAMBDA_TASK_ROOT) {
-  const PORT = process.env.PORT || 8080;
-  app.listen(PORT, () =>
-    console.log(`✅ Express API and SPA running at http://localhost:${PORT}`),
+  const PORT = process.env.PORT || 3000;
+  // bind to all interfaces
+  app.listen(PORT, "0.0.0.0", () =>
+    console.log(`🚀 Server listening on 0.0.0.0:${PORT}`),
   );
 }
 
